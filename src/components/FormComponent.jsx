@@ -3,9 +3,16 @@ import { useEffect } from "react";
 import { useRef } from "react";
 import { FileParser } from "../utils/FileParser";
 import * as Yup from "yup";
+import { useDispatch } from "react-redux";
+import { handleSaveUserAction } from "../store/userSlice";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 function FormComponent() {
   const inputRef = useRef();
+  const imageInputRef = useRef();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     inputRef.current.focus();
@@ -33,30 +40,39 @@ function FormComponent() {
 
     // 2. validation YUP
     validationSchema: Yup.object({
-      firstName: Yup.string().required(" is required!"),
-      lastName: Yup.string().required(" is required!"),
-      email: Yup.string().email(" is not valid").required(" is required!"),
-      password: Yup.string().min(4).required(" is required"),
-      confirmPassword: Yup.string().required(" is required"),
-      gender: Yup.string().required(" is required"),
-      birthDate: Yup.string().required(" is required"),
+      firstName: Yup.string().required("First Name is required!"),
+      lastName: Yup.string().required("Last Name is required!"),
+      email: Yup.string()
+        .email("Email is not valid!")
+        .required("Email is required!"),
+      password: Yup.string().min(4).required("Password is required!"),
+      confirmPassword: Yup.string()
+        .oneOf([Yup.ref("password"), null], "Passwords must match")
+        .required("Confirm password is required!"),
+      gender: Yup.string().required("Gender is required!"),
+      birthDate: Yup.string().required("Birth Date is required"),
       image: Yup.mixed()
-        .required(" is required")
+        .required("Image is required")
         .test(
           "fileSize",
-          "Image size must be under 2 MB",
-          (value) => value.size < MB * 0.5
+          "Image size must be under 500KB",
+          (value) => value.size < KB * 500
         )
-        .test("fileType", "Wrong file type", (value) =>
-          VALID_TYPE.includes(value.type)
+        .test(
+          "fileType",
+          "Valid image extensios are jpg, jpeg and png",
+          (value) => VALID_TYPE.includes(value.type)
         ),
     }),
 
     // 3. onSubmit
     onSubmit: (values) => {
-      console.log(values);
       FileParser(values.image)
-        .then((res) => console.log({ ...values, image: res }))
+        .then((res) => {
+          dispatch(handleSaveUserAction({ ...values, image: res }));
+          toast.success("Successuful Registration");
+          navigate("/profile");
+        })
         .catch((err) => console.log(err));
       // send to backend
       //   RegisterService.addUser({...values,image:res})
@@ -64,38 +80,34 @@ function FormComponent() {
       //     Navigate("/login")
       //   }).catch(err => console.log(err))
       formik.resetForm();
+      imageInputRef.current.value = "";
     },
   });
 
-  const showErrors = (inputName) =>
-    formik.errors[inputName] &&
-    formik.touched[inputName] &&
-    formik.errors[inputName];
+  const showErrors = (name) =>
+    formik.errors[name] && formik.touched[name] && formik.errors[name];
 
   return (
     <form
-      className="bg-slate-300 w-[500px] flex flex-col gap-[10px] p-[15px] rounded-lg"
+      className="bg-slate-300 w-full md:w-[500px] flex flex-col gap-[5px] p-[15px] rounded-lg"
       onSubmit={formik.handleSubmit}
     >
       {/* firstName */}
       <div className="flex flex-col">
         <label
           htmlFor="firstName"
-          className={`text-sm text-slate-800 ${
+          className={`text-xs  ${
             showErrors("firstName") ? "text-red-600" : ""
           }`}
         >
-          First Name
-          <span className="text-sm text-red-600">
-            {showErrors("firstName")}
-          </span>
+          {showErrors("firstName") ? showErrors("firstName") : "First Name"}
         </label>
         <input
           type="text"
           name="firstName"
           id="firstName"
           placeholder="First Name"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.firstName}
           onChange={formik.handleChange}
           ref={inputRef}
@@ -105,19 +117,16 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="lastName"
-          className={`text-sm text-slate-800 ${
-            showErrors("lastName") ? "text-red-600" : ""
-          }`}
+          className={`text-xs  ${showErrors("lastName") ? "text-red-600" : ""}`}
         >
-          Last Name
-          <span className="text-sm text-red-600">{showErrors("lastName")}</span>
+          {showErrors("lastName") ? showErrors("lastName") : "Last Name"}
         </label>
         <input
           type="text"
           name="lastName"
           id="lastName"
           placeholder="Last Name"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.lastName}
           onChange={formik.handleChange}
         />
@@ -126,19 +135,16 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="email"
-          className={`text-sm text-slate-800 ${
-            showErrors("email") ? "text-red-600" : ""
-          }`}
+          className={`text-xs  ${showErrors("email") ? "text-red-600" : ""}`}
         >
-          Email
-          <span className="text-sm text-red-600">{showErrors("email")}</span>
+          {showErrors("email") ? showErrors("email") : "Email"}
         </label>
         <input
           type="email"
           name="email"
           id="email"
           placeholder="Email"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.email}
           onChange={formik.handleChange}
         />
@@ -147,19 +153,16 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="password"
-          className={`text-sm text-slate-800 ${
-            showErrors("password") ? "text-red-600" : ""
-          }`}
+          className={`text-xs  ${showErrors("password") ? "text-red-600" : ""}`}
         >
-          Password
-          <span className="text-sm text-red-600">{showErrors("password")}</span>
+          {showErrors("password") ? showErrors("password") : "Password"}
         </label>
         <input
           type="password"
           name="password"
           id="password"
           placeholder="Password"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.password}
           onChange={formik.handleChange}
         />
@@ -168,21 +171,20 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="confirmPassword"
-          className={`text-sm text-slate-800 ${
+          className={`text-xs  ${
             showErrors("confirmPassword") ? "text-red-600" : ""
           }`}
         >
-          Confirm Password
-          <span className="text-sm text-red-600">
-            {showErrors("confirmPassword")}
-          </span>
+          {showErrors("confirmPassword")
+            ? showErrors("confirmPassword")
+            : "Conifirm Password"}
         </label>
         <input
           type="password"
           name="confirmPassword"
           id="confirmPassword"
           placeholder="Confirm Password"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.confirmPassword}
           onChange={formik.handleChange}
         />
@@ -191,17 +193,14 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="gender"
-          className={`text-sm text-slate-800 ${
-            showErrors("gender") ? "text-red-600" : ""
-          }`}
+          className={`text-xs  ${showErrors("gender") ? "text-red-600" : ""}`}
         >
-          Gender
-          <span className="text-sm text-red-600">{showErrors("gender")}</span>
+          {showErrors("gender") ? showErrors("gender") : "Gender"}
         </label>
         <select
           name="gender"
           id="gender"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.gender}
           onChange={formik.handleChange}
         >
@@ -216,18 +215,17 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="image"
-          className={`text-sm text-slate-800 ${
-            showErrors("image") ? "text-red-600" : ""
-          }`}
+          className={`text-xs  ${showErrors("image") ? "text-red-600" : ""}`}
         >
-          Image
-          <span className="text-sm text-red-600">{showErrors("image")}</span>
+          {showErrors("image") ? showErrors("image") : "Image"}
         </label>
         <input
           type="file"
           name="image"
           id="image"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          ref={imageInputRef}
+          accept="image/jpg, image/jpeg, image/png"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           onChange={(e) => {
             formik.setFieldValue(e.target.name, e.target.files[0]);
           }}
@@ -237,28 +235,25 @@ function FormComponent() {
       <div className="flex flex-col">
         <label
           htmlFor="birthDate"
-          className={`text-sm text-slate-800 ${
+          className={`text-xs  ${
             showErrors("birthDate") ? "text-red-600" : ""
           }`}
         >
-          Birth Date
-          <span className="text-sm text-red-600">
-            {showErrors("birthDate")}
-          </span>
+          {showErrors("birthDate") ? showErrors("birthDate") : "Birth Date"}
         </label>
         <input
           type="date"
           name="birthDate"
           id="birthDate"
           placeholder="Birth Date"
-          className="outline-none px-[16px] py-[8px] rounded-lg"
+          className="outline-none px-[16px] py-[4px] rounded-lg"
           value={formik.values.birthDate}
           onChange={formik.handleChange}
         />
       </div>
       <button
         type="submit"
-        className="bg-green-500 text-white px-[16px] py-[8px] rounded-lg hover:bg-green-600 transition-all duration-300"
+        className="bg-blue-600 text-white px-[16px] py-[4px] rounded-lg hover:bg-blue-700 transition-all duration-300 mt-[10px]"
       >
         Register Me
       </button>
