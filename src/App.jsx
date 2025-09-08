@@ -16,7 +16,7 @@ import axios from "axios";
 function App() {
   const { darkMode } = useSelector((state) => state.themeModeStore);
   const dispatch = useDispatch();
-  // Hello from main branch
+  // Hello from dev branch
 
   useEffect(() => {
     if (localStorage.hasOwnProperty("redux_user")) {
