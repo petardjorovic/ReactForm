@@ -5,6 +5,7 @@ function HomePage() {
     <div>
       HomePage from DEV
       <p>Ovo je promena sa main grane</p>
+      <p>Ovo je promena sa dev grane</p>
     </div>
   );
 }
